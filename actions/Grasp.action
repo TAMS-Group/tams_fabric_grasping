@@ -1,0 +1,10 @@
+# goal
+---
+# result
+bool success
+---
+# feedback
+uint8 APPROACH = 1
+uint8 PRESSING = 2
+uint8 CLOSING = 3
+uint8 phase
