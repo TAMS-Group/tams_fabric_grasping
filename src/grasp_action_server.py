@@ -31,6 +31,7 @@ class GraspServer:
         self.approach_speed = 0.04
         self.retreat_speed = 0.01
         self.fine_speed = 0.005
+        self.gripper_goal = 0.2
 
         self.new_tactile_data = False
         self.last_tactile_sensor_data_1 = None
@@ -42,11 +43,6 @@ class GraspServer:
         self.arm_group = moveit_commander.MoveGroupCommander('arm')
         self.gripper_group = moveit_commander.MoveGroupCommander('gripper')
 
-        self.forces = None
-        self.torques_2 = np.array([])
-        self.torques_3 = np.array([])
-        self.cartesian_state = None
-        self.policy = PositionPolicy(gripper_goal=1.5)
 
         rospy.wait_for_service('/controller_manager/switch_controller')
         self.switch_controllers = rospy.ServiceProxy('/controller_manager/switch_controller', SwitchController)
@@ -60,8 +56,8 @@ class GraspServer:
         self.forces_sub = rospy.Subscriber("/diana_gripper/forces_raw", Joy, self.forces_cb)
         self.torques_sub = rospy.Subscriber("/diana_gripper/torques", Joy, self.torques_cb)
         self.cartesian_state_sub = rospy.Subscriber("cartesian_state_controller/cartesian_state", CartesianState, self.cartesian_state_cb)
-        self.cartesian_state_sub = rospy.Subscriber("tactile_sensor_data/1", TactileSensorArrayData, self.tactile_sensor_cb)
-        self.cartesian_state_sub = rospy.Subscriber("tactile_sensor_data/2", TactileSensorArrayData, self.tactile_sensor_cb)
+        self.tactile_sensor_sub_1 = rospy.Subscriber("tactile_sensor_data/1", TactileSensorArrayData, self.tactile_sensor_cb)
+        self.tactile_sensor_sub_2 = rospy.Subscriber("tactile_sensor_data/2", TactileSensorArrayData, self.tactile_sensor_cb)
 
 
         self.gripper_goal_pub = rospy.Publisher('diana_gripper/simple_goal', JointState, queue_size=10)
@@ -72,6 +68,14 @@ class GraspServer:
 
 
     def grasp_cb(self, goal: GraspGoal):
+
+
+        self.forces = None
+        self.torques_2 = np.array([])
+        self.torques_3 = np.array([])
+        self.cartesian_state = None
+        self.policy = PositionPolicy(gripper_goal=1.5)
+        self.policy.gripper_goal_cb(self.gripper_goal)
         
         self.load_twist_controller()
 
@@ -127,6 +131,7 @@ class GraspServer:
                     print(self.torques_3.mean())
                     grasp_finished = True
             r.sleep()
+        self.grasp_action_server.set_succeeded(GraspResult())
 
 
     def move_down(self, speed=0.004):

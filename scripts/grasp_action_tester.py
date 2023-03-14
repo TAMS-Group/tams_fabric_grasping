@@ -7,6 +7,7 @@ import moveit_commander
 import moveit_msgs.msg
 import geometry_msgs.msg
 import numpy as np
+import actionlib
 from geometry_msgs.msg import Twist
 from sensor_msgs.msg import Joy, JointState
 from controller_manager_msgs.srv import SwitchController
@@ -20,6 +21,18 @@ class GraspTester:
         rospy.init_node("diana7_grasping_demo")
 
         self.robot = moveit_commander.RobotCommander()
+
+        rospy.wait_for_service('/controller_manager/switch_controller')
+        self.switch_controllers = rospy.ServiceProxy('/controller_manager/switch_controller', SwitchController)
+        rospy.wait_for_service('/diana7_hardware_interface/set_control_mode')
+        self.set_mode = rospy.ServiceProxy('/diana7_hardware_interface/set_control_mode', SetControlMode)
+        rospy.wait_for_service('/diana7_hardware_interface/set_cartesian_impedance')
+        self.set_cart_imp = rospy.ServiceProxy('/diana7_hardware_interface/set_cartesian_impedance', SetImpedance)
+        rospy.wait_for_service('/diana7_hardware_interface/set_joint_impedance')
+        self.set_joint_imp = rospy.ServiceProxy('/diana7_hardware_interface/set_joint_impedance', SetImpedance)
+
+        self.gripper_goal_pub = rospy.Publisher('diana_gripper/simple_goal', JointState, queue_size=10)
+        self.arm_vel_pub = rospy.Publisher('/cartesian_twist_controller/command', Twist, queue_size=10)
 
         self.scene = moveit_commander.PlanningSceneInterface(synchronous=True)
         self.arm_group = moveit_commander.MoveGroupCommander('arm')

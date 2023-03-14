@@ -36,7 +36,7 @@ class Policy(abc.ABC):
 
 class PositionPolicy(Policy):
 
-    def __init__(gripper_goal: float=1.5):
+    def __init__(self, gripper_goal: float=1.5):
         self.overall_gripper_goal = gripper_goal
         self.gripper_goal = None
         self.state = None
@@ -66,9 +66,9 @@ class PositionPolicy(Policy):
         self.gripper_goal = goal
 
     def decide_action(self) -> int:
-        if self.gripper_goal < self.overall_gripper_goal:
+        if self.gripper_goal and self.gripper_goal < self.overall_gripper_goal:
             return 1
         return 0
 
     def finished(self) -> bool:
-        return self.gripper_goal > self.overall_gripper_goal
+        return self.gripper_goal and self.gripper_goal > self.overall_gripper_goal
