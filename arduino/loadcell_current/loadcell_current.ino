@@ -17,7 +17,7 @@ void loop() {
 
   if (scale.is_ready()) {
     double loadcell_reading = (scale.read()+55050)/186.375465175663;  // force in mN
-    int current_reading = map((double)analogRead(A0), 0, 1023, -5.0, 5.0) * 1000;  // current in mA
+    int current_reading = analogRead(A0);  // current in mA
     //Serial.print("HX711 reading: ");
     sprintf( print_buffer, "L %d %d\n", (int)loadcell_reading, current_reading);
     Serial.print( print_buffer );
