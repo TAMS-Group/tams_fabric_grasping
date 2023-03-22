@@ -43,6 +43,7 @@ def ForceSensorDriver():
     running = 1
 
     load_publisher = rospy.Publisher( 'load', Int32, queue_size=2 )
+    current_publisher = rospy.Publisher( 'current', Int32, queue_size=2 )
 
 
     print( "... got the ROS node and publishers..." )
@@ -60,13 +61,15 @@ def ForceSensorDriver():
 
 
             if (data[0] == 'L'): 
-                (str_I, l) = [t(s) for t,s in zip(( str, int), data.split()) ]
+                (str_I, l, c) = [t(s) for t,s in zip(( str, int, int), data.split()) ]
 
 
-                msg = Int32()
-                msg.data = l
-
+                load_msg = Int32()
+                load_msg.data = l
                 load_publisher.publish(msg)
+                current_msg = Int32()
+                current_msg.data = c
+                current_publisher.publish(msg)
 
             else: 
                 if data == "'\r\n":
