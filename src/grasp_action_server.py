@@ -33,9 +33,15 @@ class GraspServer:
         self.fine_speed = 0.005
         self.gripper_goal = 0.2
 
+        self.policy = PositionPolicy(gripper_goal=1.5)
+        self.policy.gripper_goal_cb(self.gripper_goal)
         self.new_tactile_data = False
         self.last_tactile_sensor_data_1 = None
         self.last_tactile_sensor_data_2 = None
+        self.forces = None
+        self.torques_2 = np.array([])
+        self.torques_3 = np.array([])
+        self.cartesian_state = None
 
         self.robot = moveit_commander.RobotCommander()
 
@@ -70,12 +76,6 @@ class GraspServer:
     def grasp_cb(self, goal: GraspGoal):
 
 
-        self.forces = None
-        self.torques_2 = np.array([])
-        self.torques_3 = np.array([])
-        self.cartesian_state = None
-        self.policy = PositionPolicy(gripper_goal=1.5)
-        self.policy.gripper_goal_cb(self.gripper_goal)
         
         self.load_twist_controller()
 
@@ -185,8 +185,8 @@ class GraspServer:
         self.policy.force_cb(msg)
 
     def torques_cb(self, msg):
-        self.torques_2 = np.concatenate((self.torques_2, [msg.axes[2]]))[-10:]
-        self.torques_3 = np.concatenate((self.torques_3, [msg.axes[3]]))[-10:]
+        # self.torques_2 = np.concatenate((self.torques_2, [msg.axes[2]]))[-10:]
+        # self.torques_3 = np.concatenate((self.torques_3, [msg.axes[3]]))[-10:]
         self.policy.torque_cb(msg)
 
     def tactile_sensor_cb(self, msg):
