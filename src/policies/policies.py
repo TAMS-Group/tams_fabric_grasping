@@ -34,18 +34,24 @@ class Policy(abc.ABC):
     def finished(self) -> bool:
         pass
 
+    @abc.abstractmethod
+    def reset(self) -> None:
+        pass
+
 class PositionPolicy(Policy):
 
-    def __init__(self, gripper_goal: float=1.5):
+    def __init__(self, gripper_goal: float=1.1):
         self.overall_gripper_goal = gripper_goal
+        self.gripper_move_speed = 0.005
+        self.reset()
+
+    def reset(self):
         self.gripper_goal = None
         self.state = None
         self.tactile1 = None
         self.tactile2 = None
         self.torque = None
         self.force = None
-        self.gripper_move_speed = 0.005
-        
 
     def tactile_cb(self, msg: TactileSensorArrayData):
         if msg.sensor_id == 1:

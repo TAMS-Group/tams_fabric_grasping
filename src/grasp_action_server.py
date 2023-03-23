@@ -33,7 +33,7 @@ class GraspServer:
         self.fine_speed = 0.005
         self.gripper_goal = 0.2
 
-        self.policy = PositionPolicy(gripper_goal=1.5)
+        self.policy = PositionPolicy(gripper_goal=1.1)
         self.policy.gripper_goal_cb(self.gripper_goal)
         self.new_tactile_data = False
         self.last_tactile_sensor_data_1 = None
@@ -81,6 +81,9 @@ class GraspServer:
 
         print('start control loop.')
 
+        self.policy.reset()
+
+        self.gripper_goal = 0.2
         grasp_finished = False
         first_contact = False
         backdrive = 0
@@ -125,10 +128,6 @@ class GraspServer:
                     self.apply_policy()
                     self.send_gripper_goal()
                 if self.policy.finished():  # self.torques_2.mean() > self.max_grasp_torque_2 or self.torques_3.mean() > self.max_grasp_torque_3:
-                    print(self.torques_2)
-                    print(self.torques_2.mean())
-                    print(self.torques_3)
-                    print(self.torques_3.mean())
                     grasp_finished = True
             r.sleep()
         self.grasp_action_server.set_succeeded(GraspResult())
