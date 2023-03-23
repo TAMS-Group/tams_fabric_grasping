@@ -23,8 +23,8 @@ class GraspTester:
         rospy.init_node("diana7_grasping_demo")
 
         self.move_up_speed = 0.008
-        self.pull_min_threshold = 50
-        self.pull_max_threshold = 50
+        self.pull_min_threshold = 100
+        self.pull_max_threshold = 12000
         self.pull_loss_threshold = 50
 
         self.robot = moveit_commander.RobotCommander()
