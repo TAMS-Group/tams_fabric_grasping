@@ -39,7 +39,7 @@ class GraspTester:
         self.gripper_group = moveit_commander.MoveGroupCommander('gripper')
 
         self.grasp_client = actionlib.SimpleActionClient('grasp', GraspAction)
-
+        
         cont = ''
         
         while cont == '' and not rospy.is_shutdown():
@@ -58,7 +58,7 @@ class GraspTester:
             self.to_position_mode()
             self.load_position_controller()
             self.move_arm_to_named_target('idle_user_high')
-            self.send_gripper_command(self.gripper_goal, 0, 0.3)
+            # self.send_gripper_command(self.gripper_goal, 0, 0.3)
             input('drop it?')
             self.send_gripper_command(0, 0, 0)
             self.unload_controllers()
