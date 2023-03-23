@@ -15,6 +15,7 @@ from std_msgs.msg import Int32
 from controller_manager_msgs.srv import SwitchController
 from diana7_msgs.srv import SetControlMode, SetControlModeRequest, SetImpedance, SetImpedanceRequest
 from diana7_msgs.msg import CartesianState
+from tams_tactile_sensor_array.msg import TactileSensorArrayData
 from fabric_grasping.msg import GraspAction, GraspResult, GraspFeedback, GraspGoal
 
 class GraspTester:
@@ -94,7 +95,6 @@ class GraspTester:
             self.move_up(speed=self.move_up_speed)
 
             max_load = 0
-            had_load = False
             r = rospy.Rate(100)
             while self.cartesian_state_msg.pose.position.z < 0.85:  # as long as the arm is not too high up
                 if self.load > self.pull_max_threshold:  # safety stop for too high load (don't want to rip the setup apart)
@@ -106,8 +106,6 @@ class GraspTester:
                 r.sleep()
             self.stop()
             self.state = 'FINISHING'
-            self.set_gripper_goal_position(0.2)
-            self.send_gripper_goal()
             
             self.send_gripper_command(0, 0, 0)
             self.unload_controllers()
