@@ -70,6 +70,8 @@ class GraspTester:
 
         self.grasp_client = actionlib.SimpleActionClient('grasp', GraspAction)
 
+        log_timer = rospy.Timer(rospy.Duration(0.1), self.log_timer_cb)
+
         cont = ''
         rospy.sleep(2)  # to fetch the messages first
         
@@ -110,6 +112,11 @@ class GraspTester:
             self.send_gripper_command(0, 0, 0)
             self.unload_controllers()
             self.recording = False
+            if max_load < self.pull_min_threshold:
+                print("Dropping data as min load was not reached.")
+                self.log = list()
+            else:
+                self.write_log()
             cont = input('continue?')
 
     def log_timer_cb(self, event):
@@ -146,6 +153,39 @@ class GraspTester:
         self.tactile_sensor_2_msg = msg
 
     def log_state(self):
+        cont = False
+        if not self.state: 
+            print('state missing!')
+            cont = True
+        if not self.load: 
+            print('load missing!')
+            cont = True
+        if not self.current: 
+            print('current missing!')
+            cont = True
+        if not self.cartesian_state_msg: 
+            print('cartesian_state_msg missing!')
+            cont = True
+        if not self.joint_state_msg: 
+            print('joint_state_msg missing!')
+            cont = True
+        if not self.gripper_currents_msg: 
+            print('gripper_currents_msg missing!')
+            cont = True
+        if not self.torques_msg: 
+            print('torques_msg missing!')
+            cont = True
+        if not self.forces_msg: 
+            print('forces_msg missing!')
+            cont = True
+        if not self.tactile_sensor_1_msg: 
+            print('tactile_sensor_1_msg missing!')
+            cont = True
+        if not self.tactile_sensor_2_msg: 
+            print('tactile_sensor_2_msg missing!')
+            cont = True
+        if cont: 
+            return
         self.log.append(', '.join([
             str(rospy.rostime.get_time()),  # timestamp
             self.state,  # state string
@@ -161,11 +201,11 @@ class GraspTester:
             ', '.join([str(e) for e in self.forces_msg.axes]),  # loadcell forces (4 values)
             ', '.join([str(e) for e in self.tactile_sensor_1_msg.data]),  # tactile sensor 1 data (36 values)
             ', '.join([str(e) for e in self.tactile_sensor_2_msg.data]),  # tactile sensor 2 data (36 values)
-            ]))
+            ]) + '\n')
 
     def write_log(self):
         dt = datetime.now()
-        with open('logfile_' + dt.strftime('%y_%m_%d_%H_%M_%S'), 'w') as f:
+        with open('logfile_' + dt.strftime('%y_%m_%d_%H_%M_%S') + '.csv', 'w') as f:
             f.writelines(self.log)
         self.log = list()
 
