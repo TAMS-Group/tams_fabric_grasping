@@ -8,6 +8,7 @@ import moveit_commander
 import moveit_msgs.msg
 import geometry_msgs.msg
 import numpy as np
+from std_msgs.msg import Int32
 from policies.policies import Policy, PositionPolicy
 from tams_tactile_sensor_array.msg import TactileSensorArrayData
 from geometry_msgs.msg import Twist
@@ -32,9 +33,12 @@ class GraspServer:
         self.retreat_speed = 0.01
         self.fine_speed = 0.005
         self.gripper_goal = 0.2
-
+        
         self.policy = PositionPolicy(gripper_goal=1.1)
         self.policy.gripper_goal_cb(self.gripper_goal)
+        
+        self.current = False
+    
         self.new_tactile_data = False
         self.last_tactile_sensor_data_1 = None
         self.last_tactile_sensor_data_2 = None
@@ -61,6 +65,7 @@ class GraspServer:
 
         self.forces_sub = rospy.Subscriber("/diana_gripper/forces_raw", Joy, self.forces_cb)
         self.torques_sub = rospy.Subscriber("/diana_gripper/torques", Joy, self.torques_cb)
+        self.joint_state_sub = rospy.Subscriber("/current", Int32, self.current_cb)
         self.cartesian_state_sub = rospy.Subscriber("cartesian_state_controller/cartesian_state", CartesianState, self.cartesian_state_cb)
         self.tactile_sensor_sub_1 = rospy.Subscriber("tactile_sensor_data/1", TactileSensorArrayData, self.tactile_sensor_cb)
         self.tactile_sensor_sub_2 = rospy.Subscriber("tactile_sensor_data/2", TactileSensorArrayData, self.tactile_sensor_cb)
@@ -139,6 +144,9 @@ class GraspServer:
         msg.linear.z = speed
         self.arm_vel_pub.publish(msg)
 
+    def current_cb(self, msg):
+        self.current = msg.data
+        self.policy.gripper_current_cb(self.current)
 
     def move_up(self, speed=0.004):
         speed = abs(speed)
@@ -198,7 +206,7 @@ class GraspServer:
     def cartesian_state_cb(self, msg):
         self.policy.state_cb(msg)
         self.cartesian_state = msg
-        
+
     def set_gripper_goal_position(self, pos):
         self.gripper_goal = pos
         self.policy.gripper_goal_cb(self.gripper_goal)

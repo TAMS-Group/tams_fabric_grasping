@@ -11,6 +11,10 @@ class Policy(abc.ABC):
         pass
 
     @abc.abstractmethod
+    def gripper_current_cb(self, msg: TactileSensorArrayData):
+        pass
+
+    @abc.abstractmethod
     def force_cb(self, msg: Joy):
         pass
 
@@ -47,6 +51,7 @@ class PositionPolicy(Policy):
 
     def reset(self):
         self.gripper_goal = None
+        self.gripper_current = None
         self.state = None
         self.tactile1 = None
         self.tactile2 = None
@@ -58,6 +63,9 @@ class PositionPolicy(Policy):
             self.tactile1 = msg.data
         if msg.sensor_id == 2:
             self.tactile2 = msg.data
+
+    def gripper_current_cb(self, goal: float):
+        self.gripper_current = goal
 
     def force_cb(self, msg: Joy):
         self.force = msg
