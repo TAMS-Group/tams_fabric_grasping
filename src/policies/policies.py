@@ -3,6 +3,7 @@ from tams_tactile_sensor_array.msg import TactileSensorArrayData
 from geometry_msgs.msg import Twist
 from sensor_msgs.msg import Joy, JointState
 from diana7_msgs.msg import CartesianState
+import numpy as np
 
 class Policy(abc.ABC):
 
@@ -85,21 +86,24 @@ class PositionPolicy(Policy):
         return 0
 
     def finished(self) -> bool:
-        return self.gripper_goal and self.gripper_goal > self.overall_gripper_goal
+        return self.gripper_goal and self.gripper_goal >= self.overall_gripper_goal
 
 
 class GripperCurrentPolicy(Policy):
 
-    def __init__(self, gripper_current_goal: float=1):
+    def __init__(self, gripper_current_goal: float=1000):
         self.overall_gripper_current_goal = gripper_current_goal
-        self.gripper_current = None
+        self.gripper_move_speed = 0.005
+        self.reset()
+
+    def reset(self):
         self.gripper_goal = None
+        self.gripper_current = np.array([])
         self.state = None
         self.tactile1 = None
         self.tactile2 = None
         self.torque = None
         self.force = None
-        self.gripper_move_speed = 0.005
         
 
     def tactile_cb(self, msg: TactileSensorArrayData):
@@ -112,11 +116,12 @@ class GripperCurrentPolicy(Policy):
         self.force = msg
 
     def torque_cb(self, msg: Joy):
-        # np.concatenate((self.torques_2, [msg.axes[2]]))[-10:]
+        
         self.torque = msg
 
-    def gripper_current_cb(self, goal: float):
-        self.gripper_current = goal
+    def gripper_current_cb(self, current: float):
+         
+        self.gripper_current = np.concatenate((self.gripper_current, [current]))[-10:]
         
     def state_cb(self, msg: CartesianState):
         self.state = msg
@@ -125,11 +130,15 @@ class GripperCurrentPolicy(Policy):
         self.gripper_goal = goal
 
     def decide_action(self) -> int:
-        if self.gripper_current and self.gripper_current < self.overall_gripper_current_goal:
-            return 1
+        if self.gripper_current.size > 9 and self.gripper_current.mean() < self.overall_gripper_current_goal:
+            return 0.5
+        if self.gripper_current.size > 9 and self.gripper_current.mean() > self.overall_gripper_current_goal:
+            return -0.5
         return 0
 
     def finished(self) -> bool:
-        return self.gripper_current and self.gripper_current > self.overall_gripper_current_goal
+        print("sum")
+        print(abs(self.gripper_current - self.overall_gripper_current_goal).sum())
+        return self.gripper_current.size > 9 and abs(self.gripper_current - self.overall_gripper_current_goal).sum() < self.gripper_current.size * 100
 
 
