@@ -77,6 +77,7 @@ class GraspTester:
         
         while cont == '' and not rospy.is_shutdown():
             # setting everything up to start from scratch
+            self.write_log_header()
             self.recording = True
             self.state = 'INIT'
             print('initializing...')
@@ -201,6 +202,25 @@ class GraspTester:
             ', '.join([str(e) for e in self.forces_msg.axes]),  # loadcell forces (4 values)
             ', '.join([str(e) for e in self.tactile_sensor_1_msg.data]),  # tactile sensor 1 data (36 values)
             ', '.join([str(e) for e in self.tactile_sensor_2_msg.data]),  # tactile sensor 2 data (36 values)
+            ]) + '\n')
+
+    def write_log_header(self):
+
+        self.log.append(', '.join([
+            'timestamp',
+            'state',
+            'pulling_force',
+            'gripper_current',
+            'gripper_height',
+            'gripper_up_velocity',
+            ', '.join(['servo_position_' + str(i) for i in range(4)]),
+            ', '.join(['servo_velocity_' + str(i) for i in range(4)]),
+            ', '.join(['servo_effort_' + str(i) for i in range(4)]),
+            ', '.join(['servo_current_' + str(i) for i in range(4)]),
+            ', '.join(['servo_torque_' + str(i) for i in range(4)]),
+            ', '.join(['loadcell_force_' + str(i) for i in range(4)]),
+            ', '.join(['tactile_sensor_1_' + str(i) for i in range(36)]),
+            ', '.join(['tactile_sensor_2_' + str(i) for i in range(36)]),
             ]) + '\n')
 
     def write_log(self):
