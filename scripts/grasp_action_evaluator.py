@@ -70,7 +70,7 @@ class GraspTester:
 
         self.grasp_client = actionlib.SimpleActionClient('grasp', GraspAction)
 
-        log_timer = rospy.Timer(rospy.Duration(0.1), self.log_timer_cb)
+        log_timer = rospy.Timer(rospy.Duration(0.05), self.log_timer_cb)
 
         cont = ''
         rospy.sleep(2)  # to fetch the messages first
