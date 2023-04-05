@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<launch>
+
+    <arg name="rviz" default="false"/>
+    <arg name="plotjuggler" default="false"/>
+
+
+    <group if="$(arg rviz)">
+        <node name="rviz" pkg="rviz" type="rviz"/>
+    </group>
+
+    <group if="$(arg plotjuggler)">
+        <node name="plotjuggler" pkg="plotjuggler" type="plotjuggler"/>
+    </group>
+
+    <node name="loadcell_current_reader" pkg="fabric_grasping" type="loadcell_current_reader.py" respawn="false" output="screen" args="/dev/ttyUSB1">
+    </node>
+
+    <node name="grasp_action_server" pkg="fabric_grasping" type="grasp_action_server.py" respawn="false" output="screen">
+    </node>
+
+    <include file="$(find tams_diana7_bringup)/launch/diana7_ros.launch">
+    </include>
+
+    <include file="$(find tams_tactile_sensor_array)/launch/tactile_sensor_diana.launch">
+    </include>
+
+</launch>
