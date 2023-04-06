@@ -9,7 +9,7 @@ import moveit_msgs.msg
 import geometry_msgs.msg
 import numpy as np
 from std_msgs.msg import Int32
-from policies.policies import Policy, PositionPolicy, GripperCurrentPolicy
+from policies.policies import Policy, PositionPolicy, GripperCurrentPolicy, TactilePolicy
 from tams_tactile_sensor_array.msg import TactileSensorArrayData
 from geometry_msgs.msg import Twist
 from sensor_msgs.msg import Joy, JointState
@@ -34,8 +34,10 @@ class GraspServer:
         self.fine_speed = 0.005
         self.gripper_goal = 0.2
         
-        #self.policy = PositionPolicy(gripper_goal=1.0)
-        self.policy = GripperCurrentPolicy(gripper_current_goal=1000)
+        # self.policy = PositionPolicy(gripper_goal=1.0)
+        # self.policy = GripperCurrentPolicy(gripper_current_goal=600)
+        # self.policy = GripperCurrentPolicy(gripper_current_goal=1000)
+        self.policy = TactilePolicy(cell_active_threshold=900, max_gripper_current=1800, max_cell_loss=2)
         self.policy.gripper_goal_cb(self.gripper_goal)
         
         self.current = False
