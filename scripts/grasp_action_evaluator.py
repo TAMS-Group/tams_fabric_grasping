@@ -206,6 +206,7 @@ class GraspTester:
             str(self.current),  # gripper current
             str(self.cartesian_state_msg.pose.position.z),  # gripper height
             str(self.cartesian_state_msg.twist.linear.z),  # gripper up velocity
+            str(self.cartesian_state_msg.wrench.linear.z),  # gripper up velocity
             ', '.join([str(e) for e in self.joint_state_msg.position]),  # servo positions (4 values)
             ', '.join([str(e) for e in self.joint_state_msg.velocity]),  # servo velocities (4 values)
             ', '.join([str(e) for e in self.joint_state_msg.effort]),  # servo efforts (4 values)
@@ -225,6 +226,7 @@ class GraspTester:
             'gripper_current',
             'gripper_height',
             'gripper_up_velocity',
+            'arm_z_force',
             ', '.join(['servo_position_' + str(i) for i in range(4)]),
             ', '.join(['servo_velocity_' + str(i) for i in range(4)]),
             ', '.join(['servo_effort_' + str(i) for i in range(4)]),
