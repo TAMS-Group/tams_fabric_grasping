@@ -58,8 +58,8 @@ class GraspTester:
         self.tactile_sensor_2_msg = None
         self.load = None
         self.state = 'SETUP'
-        self.joint_state_sub = rospy.Subscriber("/load", Int32, self.load_cb)
-        self.joint_state_sub = rospy.Subscriber("/current", Int32, self.current_cb)
+        self.load_sub = rospy.Subscriber("/load", Int32, self.load_cb)
+        self.current_sub = rospy.Subscriber("/current", Int32, self.current_cb)
         self.joint_state_sub = rospy.Subscriber("/joint_states", JointState, self.joint_state_cb)
         self.forces_sub = rospy.Subscriber("/diana_gripper/forces_raw", Joy, self.forces_cb)
         self.torques_sub = rospy.Subscriber("/diana_gripper/torques", Joy, self.torques_cb)
@@ -70,10 +70,10 @@ class GraspTester:
 
         self.grasp_client = actionlib.SimpleActionClient('grasp', GraspAction)
 
+        rospy.sleep(2)  # to fetch the messages first
         log_timer = rospy.Timer(rospy.Duration(0.05), self.log_timer_cb)
 
         cont = ''
-        rospy.sleep(2)  # to fetch the messages first
         
         while cont == '' and not rospy.is_shutdown():
             # setting everything up to start from scratch
@@ -100,14 +100,19 @@ class GraspTester:
             max_load = 0
             r = rospy.Rate(100)
             while self.cartesian_state_msg.pose.position.z < 0.85:  # as long as the arm is not too high up
+            # while self.cartesian_state_msg.pose.position.z < 0.4:  # as long as the arm is not too high up
                 if self.load > self.pull_max_threshold:  # safety stop for too high load (don't want to rip the setup apart)
                     print("Stopping due to high pull load.")
                     break
                 if self.load > max_load:  # setting new max pull value
                     max_load = self.load
-                elif max_load - self.load > self.pull_loss_threshold:  # stop pulling when load declined.
-                    print("Stopping due to slip detection.")
+                elif max_load > 120 and self.load < 100:  # stop pulling when loss is detected.
+                    self.state = 'LOSS'
+                    print("Stopping due to loss")
                     break
+                elif max_load - self.load > self.pull_loss_threshold:  # detect slippage.
+                    self.state = 'PULL_S'
+                    print("Slip detected.")
                 r.sleep()
             self.stop()
             self.state = 'FINISHING'
