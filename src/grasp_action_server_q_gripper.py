@@ -53,15 +53,14 @@ class GraspServer:
         
         if goal.arm == GraspGoal.ARM_RIGHT:
             arm = self.dh.arm_r
-            gripper = self.dh.gripper_r
             lr = 'r'
         elif goal.arm == GraspGoal.ARM_LEFT:
             arm = self.dh.arm_l
-            gripper = self.dh.gripper_l
             lr = 'l'
         else:
             rospy.logerr('Invalid arm selection')
             return
+        gripper = arm.gripper
         arm.load_twist_controller()
         
 
