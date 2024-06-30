@@ -1,4 +1,7 @@
 # goal
+uint8 ARM_RIGHT = 1
+uint8 ARM_LEFT = 2
+uint8 arm
 ---
 # result
 bool success
