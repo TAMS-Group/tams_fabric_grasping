@@ -65,7 +65,7 @@ def ForceSensorDriver():
 
 
                 load_msg = Int32()
-                load_msg.data = l
+                load_msg.data = l + 31
                 load_publisher.publish(load_msg)
                 current_msg = Int32()
                 current_msg.data = int(round((((c/1023.0) * 10.0) - 5.0) * 1000 * 1.7))  # publish milliamps

@@ -17,6 +17,8 @@ from controller_manager_msgs.srv import SwitchController
 from diana7_msgs.srv import SetControlMode, SetControlModeRequest, SetImpedance, SetImpedanceRequest
 from diana7_msgs.msg import CartesianState
 from fabric_grasping.msg import GraspAction, GraspResult, GraspFeedback, GraspGoal
+from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
+
 
 class GraspServer:
     def __init__(self):
@@ -26,18 +28,25 @@ class GraspServer:
         self.action_name = 'grasp'
         self.max_grasp_torque_2 = 200
         self.max_grasp_torque_3 = 100
-        self.max_pressure = 15
-        self.pressure_threshold = 5  # pressure hysteresis when approaching table
+        self.max_pressure = 6
+        self.pressure_threshold = 3  # pressure hysteresis when approaching table
 
         self.approach_speed = 0.04
-        self.retreat_speed = 0.01
+        self.retreat_speed = 0.005
         self.fine_speed = 0.005
-        self.gripper_goal = 0.2
-        
-        self.policy = PositionPolicy(gripper_goal=0.9)
-        # self.policy = GripperCurrentPolicy(gripper_current_goal=600)
-        # self.policy = GripperCurrentPolicy(gripper_current_goal=1000)
-        # self.policy = TactilePolicy(cell_active_threshold=900, max_gripper_current=1800, max_cell_loss=3)
+        self.gripper_goal = 0
+
+        self.control_frequency = 50 #  Hz
+
+        self.use_softhand = True
+
+        if self.use_softhand:
+            self.policy = PositionPolicy(gripper_goal=0.7, move_speed=0.08/self.control_frequency)
+        else:
+            self.policy = PositionPolicy(gripper_goal=1.0)
+            # self.policy = GripperCurrentPolicy(gripper_current_goal=600)
+            # self.policy = GripperCurrentPolicy(gripper_current_goal=1000)
+            # self.policy = TactilePolicy(cell_active_threshold=900, max_gripper_current=1800, max_cell_loss=3)
         self.policy.gripper_goal_cb(self.gripper_goal)
         
         self.current = False
@@ -54,7 +63,7 @@ class GraspServer:
 
         self.scene = moveit_commander.PlanningSceneInterface(synchronous=True)
         self.arm_group = moveit_commander.MoveGroupCommander('arm')
-        self.gripper_group = moveit_commander.MoveGroupCommander('gripper')
+        # self.gripper_group = moveit_commander.MoveGroupCommander('gripper')
 
 
         rospy.wait_for_service('/controller_manager/switch_controller')
@@ -73,8 +82,11 @@ class GraspServer:
         self.tactile_sensor_sub_1 = rospy.Subscriber("tactile_sensor_data/1", TactileSensorArrayData, self.tactile_sensor_cb)
         self.tactile_sensor_sub_2 = rospy.Subscriber("tactile_sensor_data/2", TactileSensorArrayData, self.tactile_sensor_cb)
 
-
-        self.gripper_goal_pub = rospy.Publisher('diana_gripper/simple_goal', JointState, queue_size=10)
+        if self.use_softhand:
+            self.softhand_goal_pub = rospy.Publisher('/qbhand2m1/control/qbhand2m1_motor_positions_trajectory_controller/command', JointTrajectory, queue_size=10)
+        else:
+            self.gripper_goal_pub = rospy.Publisher('diana_gripper/simple_goal', JointState, queue_size=10)
+            
         self.arm_vel_pub = rospy.Publisher('/cartesian_twist_controller/command', Twist, queue_size=10)
 
         self.grasp_action_server = actionlib.SimpleActionServer(self.action_name, GraspAction, execute_cb=self.grasp_cb, auto_start = False)
@@ -91,12 +103,12 @@ class GraspServer:
 
         self.policy.reset()
 
-        self.gripper_goal = 0.2
+        self.gripper_goal = 0
         grasp_finished = False
         first_contact = False
         backdrive = 0
 
-        r = rospy.Rate(50) # 50hz
+        r = rospy.Rate(self.control_frequency) # 50hz
         while not grasp_finished and not rospy.is_shutdown():
             # contact with the piece (towards the table) has been made, slightly retracting and switching to impedance mode...
             if backdrive > 0: 
@@ -109,20 +121,20 @@ class GraspServer:
             # not in backdrive mode, acting normally.
             else: 
                 pressure = self.cartesian_state.wrench.linear.z
-                # print(pressure)
-                if pressure > self.pressure_threshold:
+                print(pressure)
+                if pressure > self.max_pressure:
                     # if not in impedance mode already
                     if not first_contact:
                         # move slightly back and switch to impedance mode
                         first_contact = True
-                        backdrive = 25
+                        backdrive = 50
                 # move up in case the maximal pressure was surpassed
                 if pressure > self.max_pressure + self.pressure_threshold:
-                    # print('up')
+                    print('up')
                     self.move_up(self.approach_speed)
                 # move down if the pressure is too low
                 elif pressure < self.max_pressure - self.pressure_threshold:
-                    # print('down')
+                    print('down')
                     # move slowly when first contact was made as collision is imminent.
                     if first_contact:
                         self.move_down(self.fine_speed)
@@ -131,10 +143,13 @@ class GraspServer:
                 # pressure towards the table is in desired zone
                 else:
                     self.stop()
-                    # print('stop')
+                    print('stop')
                     # if len(self.torques_2) and self.torques_2.mean() < self.max_grasp_torque_2:
                     self.apply_policy()
-                    self.send_gripper_goal()
+                    if self.use_softhand:
+                        self.send_softhand_goal()
+                    else:
+                        self.send_gripper_goal()
                 if self.policy.finished():  # self.torques_2.mean() > self.max_grasp_torque_2 or self.torques_3.mean() > self.max_grasp_torque_3:
                     grasp_finished = True
             r.sleep()
@@ -222,13 +237,25 @@ class GraspServer:
         self.policy.gripper_goal_cb(self.gripper_goal)
 
     def send_gripper_goal(self):
-        self.send_gripper_command(self.gripper_goal, 0, 0.12) #0.06)
+        self.send_gripper_command(self.gripper_goal, 0, 0.12)
+
+    def send_softhand_goal(self):
+        self.send_softhand_command(self.gripper_goal)
 
     def send_gripper_command(self, angle, proximal, distal):
         goal_msg = JointState()
         goal_msg.name = ['parallel_gripper_angle', 'parallel_gripper_proximal_tilt', 'parallel_gripper_distal_tilt']
         goal_msg.position = [angle, proximal, distal]
         self.gripper_goal_pub.publish(goal_msg)
+
+    def send_softhand_command(self, motor1, motor2=0):
+        print(motor1)
+        msg = JointTrajectory()
+        msg.joint_names = ['qbhand2m1_motor_1_joint', 'qbhand2m1_motor_2_joint']
+        msg.points = [JointTrajectoryPoint()]
+        msg.points[0].positions = [motor1, motor2]
+        msg.points[0].time_from_start.nsecs = int(1000000000/self.control_frequency)  # to fill the control frequency
+        self.softhand_goal_pub.publish(msg)
 
     def to_impedance_mode(self):
         print("switching to impedance mode...")

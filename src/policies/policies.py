@@ -45,9 +45,9 @@ class Policy(abc.ABC):
 
 class PositionPolicy(Policy):
 
-    def __init__(self, gripper_goal: float=1.1):
+    def __init__(self, gripper_goal: float=1.1, move_speed: float=0.005):
         self.overall_gripper_goal = gripper_goal
-        self.gripper_move_speed = 0.005
+        self.gripper_move_speed = move_speed
         self.reset()
 
     def reset(self):
@@ -81,7 +81,7 @@ class PositionPolicy(Policy):
         self.gripper_goal = goal
 
     def decide_action(self) -> int:
-        if self.gripper_goal and self.gripper_goal < self.overall_gripper_goal:
+        if self.gripper_goal is not None and self.gripper_goal < self.overall_gripper_goal:
             return 1
         return 0
 

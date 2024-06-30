@@ -98,6 +98,7 @@ class GraspTester:
             self.move_up(speed=self.move_up_speed)
 
             max_load = 0
+            counter = 500
             r = rospy.Rate(100)
             while self.cartesian_state_msg.pose.position.z < 0.85:  # as long as the arm is not too high up
             # while self.cartesian_state_msg.pose.position.z < 0.4:  # as long as the arm is not too high up
@@ -107,9 +108,12 @@ class GraspTester:
                 if self.load > max_load:  # setting new max pull value
                     max_load = self.load
                 elif max_load > 120 and self.load < 100:  # stop pulling when loss is detected.
-                    self.state = 'LOSS'
-                    print("Stopping due to loss")
-                    break
+                    self.state = 'FINISHING'
+                    print(counter)
+                    counter -= 1
+                    if counter <= 0:
+                        print("Stopping due to loss")
+                        break
                 elif max_load - self.load > self.pull_loss_threshold:  # detect slippage.
                     self.state = 'PULL_S'
                     print("Slip detected.")
