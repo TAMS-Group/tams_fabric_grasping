@@ -18,7 +18,10 @@ class GraspServer:
         self.action_name = 'grasp'
         self.max_grasp_torque_2 = 200
         self.max_grasp_torque_3 = 100
-        self.max_pressure = 8
+        self.max_pressure = {
+            'r': 20,
+            'l': 12
+            }
         self.pressure_threshold = 5  # pressure hysteresis when approaching table
 
         self.approach_speed = 0.02
@@ -94,11 +97,11 @@ class GraspServer:
                         first_contact = True
                         backdrive = 0
                 # move up in case the maximal pressure was surpassed
-                if pressure > self.max_pressure + self.pressure_threshold:
+                if pressure > self.max_pressure[lr] + self.pressure_threshold:
                     # print('up')
                     arm.set_arm_velocity(vz=self.approach_speed)
                 # move down if the pressure is too low
-                elif pressure < self.max_pressure - self.pressure_threshold:
+                elif pressure < self.max_pressure[lr] - self.pressure_threshold:
                     # print('down')
                     # move slowly when first contact was made as collision is imminent.
                     if first_contact:
