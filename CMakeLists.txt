@@ -8,12 +8,16 @@ project(fabric_grasping)
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
+  roscpp
   sensor_msgs
   std_msgs
   actionlib
   actionlib_msgs
+  pcl_ros
+  genmsg
 )
 
+find_package(PCL 1.8 REQUIRED)
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
 
@@ -65,12 +69,14 @@ find_package(catkin REQUIRED COMPONENTS
 add_action_files(
   FILES
   Grasp.action
+  GetGraspPoint.action
 )
 
 ## Generate added messages and services with any dependencies listed here
 generate_messages(
   DEPENDENCIES
   sensor_msgs
+  geometry_msgs
   std_msgs
   actionlib_msgs
 )
@@ -95,6 +101,11 @@ generate_messages(
 #   cfg/DynReconf2.cfg
 # )
 
+generate_dynamic_reconfigure_options(
+  cfg/parameters.cfg
+)
+
+
 ###################################
 ## catkin specific configuration ##
 ###################################
@@ -105,6 +116,8 @@ generate_messages(
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
+  CATKIN_DEPENDS 
+  actionlib_msgs
 #  INCLUDE_DIRS include
 #  LIBRARIES fabric_grasping
 #  CATKIN_DEPENDS sensor_msgs std_msgs
@@ -206,3 +219,12 @@ include_directories(
 
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
+
+add_executable(grasp_point_detector src/grasp_point_detector.cpp)
+add_executable(viewer src/viewer.cpp)
+
+add_dependencies(viewer ${PROJECT_NAME}_gencfg)
+add_dependencies(grasp_point_detector ${PROJECT_NAME}_gencfg)
+
+target_link_libraries(grasp_point_detector ${catkin_LIBRARIES} ${PCL_LIBRARIES})
+target_link_libraries(viewer ${catkin_LIBRARIES} ${PCL_LIBRARIES})
